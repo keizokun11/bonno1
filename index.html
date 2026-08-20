@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>煩悩オークション</title>
-  <!-- bonno-auction v4: submit nav hidden -->
+  <!-- bonno-auction v5: true centered screen text -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -231,49 +231,83 @@
     }
 
     body.screen-body {
+      width: 100vw;
+      height: 100vh;
       min-height: 100vh;
       overflow: hidden;
       display: block;
     }
 
     body.screen-body #root {
+      position: fixed;
+      inset: 0;
       width: 100vw;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
     }
 
     .screen-card {
-      width: min(1200px, 94vw);
+      position: relative;
+      width: 100vw;
+      height: 100vh;
       min-height: 100vh;
       text-align: center;
-      padding: 30px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .screen-label {
+      position: absolute;
+      top: 6vh;
+      left: 0;
+      right: 0;
+      width: 100%;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(20px, 3vw, 36px);
+      letter-spacing: 0.18em;
+      margin: 0;
+      padding: 0 5vw;
+    }
+
+    .screen-center {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-    }
-
-    .screen-label {
-      color: var(--muted);
-      font-size: clamp(20px, 3vw, 36px);
-      letter-spacing: 0.18em;
-      margin-bottom: 34px;
+      text-align: center;
+      padding: 14vh 5vw 16vh;
+      pointer-events: none;
     }
 
     .screen-text {
+      width: 100%;
+      max-width: 100vw;
+      margin: 0 auto;
+      text-align: center;
       font-size: clamp(48px, 9vw, 126px);
       line-height: 1.22;
       font-weight: 900;
       letter-spacing: 0.04em;
       text-shadow: 0 0 20px rgba(255, 174, 58, 0.55), 0 0 60px rgba(255, 86, 32, 0.22);
-      white-space: pre-wrap;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
       transition: all 0.45s ease;
     }
 
     .screen-meta {
-      margin-top: 32px;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 5vh;
+      width: 100%;
+      margin: 0;
+      padding: 0 5vw;
+      text-align: center;
       color: var(--muted);
       font-size: clamp(18px, 2.4vw, 30px);
     }
@@ -342,6 +376,7 @@
       font-weight: 900;
       letter-spacing: 0.1em;
       opacity: 0;
+      text-align: center;
     }
 
     .purified.show {
@@ -848,17 +883,17 @@
       const isBurning = mode === "burning";
       const isFinished = mode === "finished";
 
+      const screenText = current ? escapeHtml(current.text).trim() : "";
+      const screenMeta = current ? `カテゴリ：${escapeHtml(current.category || "未分類")}　投稿：${escapeHtml(current.nickname || "匿名")}` : "";
       root.innerHTML = `
         <main class="screen-card">
           ${isConfigured() ? "" : setupWarning()}
           <div class="screen-label">${current ? (isFinished ? "供養完了" : "ただいまの煩悩") : "待機中"}</div>
-          <div id="screen-text" class="screen-text ${isBurning ? "burning-text" : ""}">
-            ${current ? escapeHtml(current.text) : ""}
+          <div class="screen-center">
+            <div id="screen-text" class="screen-text ${isBurning ? "burning-text" : ""}">${screenText}</div>
+            <div id="purified" class="purified ${current && (isFinished || isBurning) ? "show" : ""}">浄化されました</div>
           </div>
-          <div class="screen-meta">
-            ${current ? `カテゴリ：${escapeHtml(current.category || "未分類")}　投稿：${escapeHtml(current.nickname || "匿名")}` : ""}
-          </div>
-          <div id="purified" class="purified ${current && (isFinished || isBurning) ? "show" : ""}">浄化されました</div>
+          <div class="screen-meta">${screenMeta}</div>
         </main>
         <div class="flame ${isBurning ? "active" : ""}"></div>
       `;
