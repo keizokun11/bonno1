@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>煩悩オークション</title>
+  <style>
+    :root {
+      --bg: #120b07;
+      --bg2: #231006;
+      --card: rgba(255, 255, 255, 0.08);
+      --card2: rgba(255, 255, 255, 0.12);
+      --text: #fff7e8;
+      --muted: #d8c7aa;
+      --accent: #ff9d2e;
+      --accent2: #ff4b1f;
+      --ok: #50d890;
+      --danger: #ff5d73;
+      --border: rgba(255,255,255,.14);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; }
+    body {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 157, 46, .18), transparent 36%),
+        radial-gradient(circle at 15% 85%, rgba(255, 75, 31, .14), transparent 38%),
+        linear-gradient(140deg, #070505, #170a04 46%, #030303);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topnav {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 14px clamp(14px, 4vw, 32px);
+      backdrop-filter: blur(16px);
+      background: rgba(6, 4, 3, .72);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; flex-direction: column; gap: 2px; }
+    .brand strong { font-size: 18px; letter-spacing: .03em; }
+    .brand span { color: var(--muted); font-size: 12px; }
+    .links { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .linkBtn {
+      padding: 9px 12px; border-radius: 999px; border: 1px solid var(--border);
+      background: rgba(255,255,255,.07); color: var(--text); font-size: 13px;
+    }
+    .linkBtn.active { background: linear-gradient(135deg, rgba(255,157,46,.32), rgba(255,75,31,.22)); border-color: rgba(255,157,46,.55); }
+
+    .wrap { width: min(1120px, calc(100% - 28px)); margin: 0 auto; padding: 32px 0 52px; }
+    .hero { margin: 10px 0 26px; }
+    .kicker { color: var(--accent); font-weight: 800; letter-spacing: .16em; font-size: 13px; }
+    h1 { margin: 8px 0 10px; font-size: clamp(32px, 7vw, 68px); line-height: 1.05; letter-spacing: -0.04em; }
+    .lead { color: var(--muted); font-size: 16px; line-height: 1.8; max-width: 740px; }
+
+    .grid { display: grid; gap: 18px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 780px) { .grid.two, .grid.three { grid-template-columns: 1fr; } .topnav { align-items: flex-start; flex-direction: column; } .links { justify-content: flex-start; } }
+
+    .card {
+      background: linear-gradient(160deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 4vw, 28px);
+    }
+    .card h2 { margin: 0 0 16px; font-size: 22px; }
+    .sectionTitle { display:flex; align-items:center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+    .countPill { color: var(--muted); border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+
+    label { display:block; font-weight: 700; margin: 18px 0 8px; }
+    textarea, input, select {
+      width: 100%; border: 1px solid var(--border); color: var(--text);
+      background: rgba(0,0,0,.28); border-radius: 16px; padding: 14px 15px; outline: none;
+    }
+    textarea { min-height: 132px; resize: vertical; line-height: 1.7; }
+    textarea:focus, input:focus, select:focus { border-color: rgba(255,157,46,.85); box-shadow: 0 0 0 4px rgba(255,157,46,.15); }
+    select option { background: #1a0d08; }
+    .small { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+    .primary, .secondary, .danger, .ghost, .fire {
+      min-height: 46px; border: 0; border-radius: 15px; padding: 12px 16px; font-weight: 800; color: white;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .primary { background: linear-gradient(135deg, #ffb649, #ff6a1f); }
+    .secondary { background: rgba(80, 216, 144, .2); color: #bff7d6; border: 1px solid rgba(80,216,144,.35); }
+    .danger { background: rgba(255, 93, 115, .2); color: #ffc6cf; border: 1px solid rgba(255,93,115,.38); }
+    .ghost { background: rgba(255,255,255,.08); border: 1px solid var(--border); color: var(--text); }
+    .fire { background: linear-gradient(135deg, #ff3d00, #ffb000); box-shadow: 0 0 30px rgba(255,75,31,.22); }
+    .buttonRow { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 12px; }
+    .full { width: 100%; margin-top: 18px; }
+
+    .item {
+      padding: 16px; border-radius: 18px; background: rgba(0,0,0,.2); border: 1px solid var(--border); margin-bottom: 10px;
+    }
+    .itemText { font-size: 18px; line-height: 1.65; font-weight: 800; }
+    .meta { margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .empty { border: 1px dashed var(--border); color: var(--muted); text-align:center; border-radius:18px; padding: 26px; }
+
+    .screenPage { min-height: calc(100vh - 77px); display:flex; align-items:center; justify-content:center; padding: 22px; overflow:hidden; }
+    .screenCard { width: min(1180px, 100%); min-height: min(680px, calc(100vh - 120px)); display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; position:relative; }
+    .screenLabel { color: var(--accent); font-size: clamp(18px, 2vw, 30px); font-weight:900; letter-spacing:.18em; margin-bottom: 28px; }
+    .bonnoText { max-width: 1100px; font-size: clamp(52px, 10vw, 138px); font-weight: 1000; line-height: 1.16; letter-spacing: -0.04em; text-shadow: 0 0 22px rgba(255,157,46,.45); word-break: keep-all; overflow-wrap: anywhere; }
+    .screenMeta { margin-top: 28px; color: var(--muted); font-size: clamp(18px, 2.6vw, 34px); }
+    .purified { position:absolute; bottom: 9%; font-size: clamp(30px, 6vw, 70px); font-weight:1000; color: #fff1cc; opacity:0; letter-spacing:.06em; text-shadow: 0 0 40px rgba(255,157,46,.55); }
+    .purified.show { animation: purifiedShow 4.4s forwards; }
+
+    .bonnoText.burning { animation: burnText 4.4s forwards; }
+    .flame {
+      position: fixed; left: 0; bottom: -90px; width: 100%; height: 38vh; opacity:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse at 20% 100%, rgba(255, 244, 123, .95), transparent 35%),
+        radial-gradient(ellipse at 42% 100%, rgba(255, 71, 20, .98), transparent 38%),
+        radial-gradient(ellipse at 65% 100%, rgba(255, 174, 0, .92), transparent 40%),
+        radial-gradient(ellipse at 82% 100%, rgba(255, 58, 8, .85), transparent 34%),
+        linear-gradient(to top, rgba(255,50,0,.95), rgba(255,166,0,.55), transparent);
+      filter: blur(1px);
+    }
+    .flame.active { animation: flameUp 4.4s forwards; }
+
+    @keyframes burnText {
+      0% { opacity:1; transform: scale(1); color:#fffaf0; filter: blur(0); text-shadow: 0 0 24px rgba(255,157,46,.6); }
+      24% { transform: scale(1.07); color:#ffd46f; text-shadow: 0 0 34px orange, 0 0 76px red; }
+      56% { opacity:.78; color:#4b2004; filter: blur(1.2px); transform: scale(.99) rotate(-.6deg); }
+      100% { opacity:0; color:#070707; filter: blur(10px); transform: translateY(-90px) scale(.84) rotate(1.5deg); }
+    }
+    @keyframes flameUp {
+      0% { opacity:0; transform: translateY(160px) scaleY(.6); }
+      25% { opacity:1; transform: translateY(0) scaleY(1); }
+      68% { opacity:.92; transform: translateY(-60px) scaleY(1.18); }
+      100% { opacity:0; transform: translateY(-170px) scaleY(.85); }
+    }
+    @keyframes purifiedShow {
+      0%, 62% { opacity:0; transform: translateY(20px); }
+      100% { opacity:1; transform: translateY(0); }
+    }
+
+    .toast { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: rgba(80,216,144,.14); color:#c9ffe0; border:1px solid rgba(80,216,144,.28); }
+    .note { margin-top: 18px; padding: 14px; border-radius: 16px; border:1px solid rgba(255,157,46,.22); background: rgba(255,157,46,.08); color: var(--muted); line-height:1.8; }
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/">
+      <strong>煩悩オークション</strong>
+      <span>投稿・承認・表示・燃焼MVP</span>
+    </a>
+    <div class="links">
+      <a id="nav-home" class="linkBtn" href="/">Home</a>
+      <a id="nav-submit" class="linkBtn" href="/submit">投稿</a>
+      <a id="nav-admin" class="linkBtn" href="/admin">運営</a>
+      <a id="nav-screen" class="linkBtn" href="/screen">スクリーン</a>
+    </div>
+  </nav>
+
+  <main id="app"></main>
+
+  <script>
+    const STORAGE_KEY = "bonno-auction-flat-state-v1";
+    const categories = ["お金", "恋愛", "承認欲求", "怠惰", "食欲", "将来不安", "その他"];
+
+    const initialState = {
+      bonnos: [
+        { id: "sample-1", text: "楽して単位がほしい", category: "怠惰", nickname: "", status: "pending", createdAt: Date.now() - 40000 },
+        { id: "sample-2", text: "もっと有名になりたい", category: "承認欲求", nickname: "匿名", status: "approved", createdAt: Date.now() - 30000 },
+        { id: "sample-3", text: "お金がほしい", category: "お金", nickname: "", status: "approved", createdAt: Date.now() - 20000 }
+      ],
+      displayState: { currentBonnoId: null, mode: "idle", updatedAt: Date.now() }
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(initialState);
+        return JSON.parse(raw);
+      } catch (e) {
+        return structuredClone(initialState);
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.dispatchEvent(new Event("bonno-state-change"));
+    }
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function getRoute() {
+      const path = window.location.pathname.replace(/\/$/, "") || "/";
+      if (["/submit", "/admin", "/screen"].includes(path)) return path;
+      return "/";
+    }
+
+    function setActiveNav(route) {
+      ["home", "submit", "admin", "screen"].forEach(key => {
+        const el = document.getElementById("nav-" + key);
+        if (el) el.classList.remove("active");
+      });
+      const id = route === "/" ? "nav-home" : "nav-" + route.slice(1);
+      const active = document.getElementById(id);
+      if (active) active.classList.add("active");
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>'"]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[ch]));
+    }
+
+    function render() {
+      const route = getRoute();
+      setActiveNav(route);
+      if (route === "/submit") renderSubmit();
+      else if (route === "/admin") renderAdmin();
+      else if (route === "/screen") renderScreen();
+      else renderHome();
+    }
+
+    function shell(content) {
+      document.getElementById("app").innerHTML = `<div class="wrap">${content}</div>`;
+    }
+
+    function renderHome() {
+      shell(`
+        <section class="hero">
+          <div class="kicker">BONNO AUCTION</div>
+          <h1>煩悩を集めて、<br>画面で燃やす。</h1>
+          <p class="lead">これはGitHubでフォルダをアップロードできない場合に使える、ルート直下ファイルだけのMVP版です。まずはVercelで公開確認をしてください。</p>
+        </section>
+        <div class="grid three">
+          <a class="card" href="/submit"><h2>投稿画面</h2><p class="small">参加者がスマホから煩悩を投稿します。</p></a>
+          <a class="card" href="/admin"><h2>運営画面</h2><p class="small">承認、表示、燃やす操作をします。</p></a>
+          <a class="card" href="/screen"><h2>スクリーン</h2><p class="small">会場に大きく表示します。</p></a>
+        </div>
+        <div class="note">注意：この版はまず動作確認用です。投稿データは同じブラウザのlocalStorageに保存されます。本番で別端末から投稿を集めるには、次にSupabase接続を入れます。</div>
+      `);
+    }
+
+    function renderSubmit() {
+      shell(`
+        <section class="hero">
+          <div class="kicker">SUBMIT</div>
+          <h1>あなたの煩悩を<br>差し出してください</h1>
+          <p class="lead">匿名で投稿できます。個人名、誹謗中傷、差別的表現は表示されません。</p>
+        </section>
+        <section class="card">
+          <form id="submitForm">
+            <label for="bonnoText">煩悩本文 <span class="small">50文字以内</span></label>
+            <textarea id="bonnoText" maxlength="50" placeholder="例：楽して単位がほしい" required></textarea>
+
+            <label for="category">カテゴリ</label>
+            <select id="category">${categories.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+
+            <label for="nickname">ニックネーム <span class="small">任意</span></label>
+            <input id="nickname" maxlength="20" placeholder="匿名でもOK" />
+
+            <button class="primary full" type="submit">煩悩を投稿する</button>
+            <div id="submitToast"></div>
+          </form>
+        </section>
+      `);
+      document.getElementById("submitForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const text = document.getElementById("bonnoText").value.trim();
+        if (!text) return;
+        const state = loadState();
+        state.bonnos.unshift({
+          id: uid(), text,
+          category: document.getElementById("category").value,
+          nickname: document.getElementById("nickname").value.trim(),
+          status: "pending", createdAt: Date.now()
+        });
+        saveState(state);
+        document.getElementById("bonnoText").value = "";
+        document.getElementById("nickname").value = "";
+        document.getElementById("submitToast").innerHTML = `<div class="toast">投稿しました。運営の承認後に表示されます。</div>`;
+      });
+    }
+
+    function renderAdmin() {
+      const state = loadState();
+      const pending = state.bonnos.filter(b => b.status === "pending");
+      const approved = state.bonnos.filter(b => b.status === "approved");
+      const burned = state.bonnos.filter(b => b.status === "burned");
+      const current = state.bonnos.find(b => b.id === state.displayState.currentBonnoId);
+
+      shell(`
+        <section class="hero">
+          <div class="kicker">ADMIN</div>
+          <h1>運営画面</h1>
+          <p class="lead">本番中はここから承認・表示・燃焼操作を行います。</p>
+        </section>
+        <div class="grid two">
+          <section class="card">
+            <div class="sectionTitle"><h2>現在表示中</h2><span class="countPill">mode: ${escapeHtml(state.displayState.mode)}</span></div>
+            ${current ? itemHtml(current, true) : `<div class="empty">まだ表示中の煩悩はありません</div>`}
+            <div class="buttonRow">
+              <button class="fire" onclick="burnCurrent()">燃やす</button>
+              <button class="secondary" onclick="finishCurrent()">浄化完了</button>
+              <button class="ghost" onclick="showNext()">次へ</button>
+            </div>
+          </section>
+          <section class="card">
+            <div class="sectionTitle"><h2>操作</h2></div>
+            <div class="buttonRow">
+              <button class="ghost" onclick="resetDemo()">デモ初期化</button>
+              <button class="danger" onclick="clearAll()">全削除</button>
+            </div>
+            <p class="small">別タブで /screen を開いて、ここで「表示する」「燃やす」を押すと動作確認できます。</p>
+          </section>
+        </div>
+        <div class="grid two" style="margin-top:18px">
+          <section class="card">
+            <div class="sectionTitle"><h2>承認待ち</h2><span class="countPill">${pending.length}件</span></div>
+            ${pending.length ? pending.map(b => itemHtml(b)).join("") : `<div class="empty">承認待ちはありません</div>`}
+          </section>
+          <section class="card">
+            <div class="sectionTitle"><h2>承認済み</h2><span class="countPill">${approved.length}件</span></div>
+            ${approved.length ? approved.map(b => itemHtml(b)).join("") : `<div class="empty">承認済みはありません</div>`}
+          </section>
+        </div>
+        <section class="card" style="margin-top:18px">
+          <div class="sectionTitle"><h2>燃焼済み</h2><span class="countPill">${burned.length}件</span></div>
+          ${burned.length ? burned.map(b => itemHtml(b, false, true)).join("") : `<div class="empty">まだ燃焼済みはありません</div>`}
+        </section>
+      `);
+    }
+
+    function itemHtml(b, compact = false, readonly = false) {
+      const safeText = escapeHtml(b.text);
+      const meta = `${escapeHtml(b.category || "未分類")} ${b.nickname ? "・" + escapeHtml(b.nickname) : ""} ・ ${escapeHtml(b.status)}`;
+      let buttons = "";
+      if (!readonly) {
+        if (b.status === "pending") {
+          buttons = `<button class="secondary" onclick="approveBonno('${b.id}')">承認</button><button class="danger" onclick="rejectBonno('${b.id}')">NG</button>`;
+        } else if (b.status === "approved") {
+          buttons = `<button class="primary" onclick="showBonno('${b.id}')">表示する</button><button class="fire" onclick="showAndBurn('${b.id}')">表示して燃やす</button><button class="danger" onclick="rejectBonno('${b.id}')">NG</button>`;
+        }
+      }
+      return `<div class="item"><div class="itemText">${safeText}</div><div class="meta">${meta}</div>${buttons ? `<div class="buttonRow">${buttons}</div>` : ""}</div>`;
+    }
+
+    window.approveBonno = function(id) {
+      const state = loadState();
+      state.bonnos = state.bonnos.map(b => b.id === id ? { ...b, status: "approved" } : b);
+      saveState(state); renderAdmin();
+    };
+    window.rejectBonno = function(id) {
+      const state = loadState();
+      state.bonnos = state.bonnos.map(b => b.id === id ? { ...b, status: "rejected" } : b);
+      saveState(state); renderAdmin();
+    };
+    window.showBonno = function(id) {
+      const state = loadState();
+      state.displayState = { currentBonnoId: id, mode: "showing", updatedAt: Date.now() };
+      saveState(state); renderAdmin();
+    };
+    window.showAndBurn = function(id) {
+      const state = loadState();
+      state.displayState = { currentBonnoId: id, mode: "burning", updatedAt: Date.now() };
+      saveState(state); renderAdmin();
+    };
+    window.burnCurrent = function() {
+      const state = loadState();
+      if (!state.displayState.currentBonnoId) return;
+      state.displayState.mode = "burning";
+      state.displayState.updatedAt = Date.now();
+      saveState(state); renderAdmin();
+    };
+    window.finishCurrent = function() {
+      const state = loadState();
+      const id = state.displayState.currentBonnoId;
+      if (id) state.bonnos = state.bonnos.map(b => b.id === id ? { ...b, status: "burned" } : b);
+      state.displayState.mode = "finished";
+      state.displayState.updatedAt = Date.now();
+      saveState(state); renderAdmin();
+    };
+    window.showNext = function() {
+      const state = loadState();
+      const next = state.bonnos.find(b => b.status === "approved" && b.id !== state.displayState.currentBonnoId);
+      if (next) state.displayState = { currentBonnoId: next.id, mode: "showing", updatedAt: Date.now() };
+      saveState(state); renderAdmin();
+    };
+    window.resetDemo = function() { localStorage.removeItem(STORAGE_KEY); saveState(structuredClone(initialState)); renderAdmin(); };
+    window.clearAll = function() {
+      if (!confirm("投稿データを全削除しますか？")) return;
+      saveState({ bonnos: [], displayState: { currentBonnoId: null, mode: "idle", updatedAt: Date.now() } });
+      renderAdmin();
+    };
+
+    function renderScreen() {
+      const state = loadState();
+      const current = state.bonnos.find(b => b.id === state.displayState.currentBonnoId);
+      const mode = state.displayState.mode;
+      const isBurning = mode === "burning";
+      const isFinished = mode === "finished";
+      document.getElementById("app").innerHTML = `
+        <div class="screenPage">
+          <section class="screenCard">
+            <div class="screenLabel">ただいまの煩悩</div>
+            <div id="screenBonno" class="bonnoText ${isBurning ? "burning" : ""}">${escapeHtml(current?.text || "煩悩を選択してください")}</div>
+            <div class="screenMeta">${current ? `カテゴリ：${escapeHtml(current.category || "未分類")}` : "運営画面で表示する煩悩を選んでください"}</div>
+            <div class="purified ${isBurning || isFinished ? "show" : ""}">浄化されました</div>
+          </section>
+          <div class="flame ${isBurning ? "active" : ""}"></div>
+        </div>
+      `;
+    }
+
+    window.addEventListener("popstate", render);
+    document.addEventListener("click", e => {
+      const a = e.target.closest("a[href]");
+      if (!a) return;
+      const url = new URL(a.href);
+      if (url.origin !== location.origin) return;
+      e.preventDefault();
+      history.pushState({}, "", url.pathname);
+      render();
+    });
+    window.addEventListener("storage", () => { if (getRoute() === "/screen") renderScreen(); });
+    window.addEventListener("bonno-state-change", () => { if (getRoute() === "/screen") renderScreen(); });
+    setInterval(() => { if (getRoute() === "/screen") renderScreen(); }, 1200);
+
+    render();
+  </script>
+</body>
+</html>
