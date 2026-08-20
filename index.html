@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>煩悩オークション</title>
-  <!-- bonno-auction v5: true centered screen text -->
+  <!-- bonno-auction v6: participant bonno valuation -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -418,6 +418,64 @@
       margin: -4px 0 12px;
     }
 
+
+    .value-panel {
+      margin-top: 18px;
+    }
+
+    .current-value-card {
+      border: 1px solid rgba(240, 162, 58, 0.38);
+      background: rgba(240, 162, 58, 0.10);
+      border-radius: 20px;
+      padding: 18px;
+      margin-top: 12px;
+    }
+
+    .current-value-text {
+      font-size: clamp(22px, 4vw, 38px);
+      font-weight: 900;
+      line-height: 1.45;
+      margin: 8px 0 10px;
+    }
+
+    .value-total {
+      font-size: clamp(28px, 6vw, 58px);
+      font-weight: 900;
+      color: #ffd48a;
+      text-shadow: 0 0 20px rgba(255, 129, 32, 0.35);
+      margin: 6px 0 14px;
+    }
+
+    .value-buttons {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .value-button {
+      min-height: 58px;
+      padding: 10px 8px;
+      border-radius: 16px;
+      font-size: clamp(13px, 2.4vw, 18px);
+      background: linear-gradient(135deg, #ffc05a, #f08a28);
+    }
+
+    @media (max-width: 680px) {
+      .value-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .value-button:last-child { grid-column: 1 / -1; }
+    }
+
+    .screen-value {
+      display: block;
+      margin-top: 10px;
+      font-size: clamp(24px, 3.2vw, 42px);
+      font-weight: 900;
+      color: #ffd48a;
+      text-shadow: 0 0 18px rgba(255, 129, 32, 0.36);
+    }
+
+
     .setup-warning {
       border: 1px solid rgba(255, 91, 58, 0.6);
       background: rgba(255, 91, 58, 0.12);
@@ -444,11 +502,13 @@
     const SUPABASE_ANON_KEY = "sb_publishable_ria1SUzaGXmEO2bRvPgJQA_SD6RrU-f";
 
     const categories = ["お金", "恋愛", "承認欲求", "怠惰", "食欲", "将来不安", "その他"];
+    const valueOptions = [1, 10, 100, 1000, 10000];
     let client = null;
     let appState = {
       bonnos: [],
       displayState: { id: 1, current_bonno_id: null, mode: "idle", updated_at: null },
       currentBonno: null,
+      valueTotals: {},
       loading: false,
       message: ""
     };
@@ -480,6 +540,17 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+
+    function formatBonno(value) {
+      const number = Number(value || 0);
+      return number.toLocaleString("ja-JP") + " bonno";
+    }
+
+    function getBonnoTotal(id) {
+      if (!id) return 0;
+      return appState.valueTotals[id] || 0;
     }
 
     function topbar(activeRoute = route) {
@@ -568,6 +639,10 @@
               </div>
             </form>
           </section>
+
+          <section id="participant-value-box" class="value-panel">
+            ${participantValueBoxHtml()}
+          </section>
         </main>
       `;
 
@@ -575,7 +650,85 @@
       const counter = document.getElementById("counter");
       text.addEventListener("input", () => counter.textContent = text.value.length);
       document.getElementById("submit-form").addEventListener("submit", handleSubmit);
+      attachValueButtons();
     }
+
+
+    function participantValueBoxHtml() {
+      const current = appState.currentBonno;
+      const mode = appState.displayState?.mode || "idle";
+      const canValue = current && ["showing", "burning"].includes(mode);
+      if (!current) {
+        return `
+          <section class="card">
+            <div class="section-title"><h2>スクリーンの煩悩に価値づけ</h2></div>
+            <div class="empty">現在スクリーンに表示中の煩悩はありません。表示されたらここに出ます。</div>
+          </section>
+        `;
+      }
+      return `
+        <section class="card">
+          <div class="section-title">
+            <h2>スクリーンの煩悩に価値づけ</h2>
+            <span class="badge">${escapeHtml(mode)}</span>
+          </div>
+          <div class="current-value-card">
+            <div class="hint">ただいま映し出されている煩悩</div>
+            <div class="current-value-text">${escapeHtml(current.text)}</div>
+            <div class="hint">現在の価値</div>
+            <div class="value-total" id="participant-value-total">${formatBonno(getBonnoTotal(current.id))}</div>
+            ${canValue ? `
+              <div class="hint">この煩悩にどれくらい価値があるか、bonnoで入札してください。</div>
+              <div class="value-buttons">
+                ${valueOptions.map(v => `<button type="button" class="value-button" data-value-amount="${v}">${formatBonno(v)}</button>`).join("")}
+              </div>
+              <div class="status-line" id="value-message" style="margin-top: 10px;"></div>
+            ` : `
+              <div class="empty">この煩悩への価値づけは現在停止中です。</div>
+            `}
+          </div>
+        </section>
+      `;
+    }
+
+    function updateParticipantValueBox() {
+      const box = document.getElementById("participant-value-box");
+      if (!box) return;
+      box.innerHTML = participantValueBoxHtml();
+      attachValueButtons();
+    }
+
+    function attachValueButtons() {
+      document.querySelectorAll("button[data-value-amount]").forEach(button => {
+        button.addEventListener("click", handleValueClick);
+      });
+    }
+
+    async function handleValueClick(event) {
+      const db = initClient();
+      const button = event.currentTarget;
+      const message = document.getElementById("value-message");
+      const currentId = appState.displayState?.current_bonno_id;
+      const amount = Number(button.dataset.valueAmount);
+
+      if (!db || !currentId || !amount) return;
+      button.disabled = true;
+      if (message) message.textContent = `${formatBonno(amount)} を送信中...`;
+
+      const { error } = await db.from("bonno_values").insert({ bonno_id: currentId, amount });
+      button.disabled = false;
+
+      if (error) {
+        if (message) message.textContent = "価値づけに失敗しました：" + error.message;
+        return;
+      }
+
+      await loadValueTotals();
+      updateParticipantValueBox();
+      const newMessage = document.getElementById("value-message");
+      if (newMessage) newMessage.textContent = `${formatBonno(amount)} を加えました。`;
+    }
+
 
     async function handleSubmit(event) {
       event.preventDefault();
@@ -619,6 +772,7 @@
       const burned = appState.bonnos.filter(b => b.status === "burned");
       const current = appState.currentBonno;
       const mode = appState.displayState?.mode || "idle";
+      const currentTotal = current ? getBonnoTotal(current.id) : 0;
 
       root.innerHTML = `
         ${topbar()}
@@ -640,7 +794,7 @@
             ${current ? `
               <div class="item">
                 <div class="item-main">${escapeHtml(current.text)}</div>
-                <div class="item-meta">${escapeHtml(current.category || "未分類")} / ${escapeHtml(current.nickname || "匿名")}</div>
+                <div class="item-meta">${escapeHtml(current.category || "未分類")} / ${escapeHtml(current.nickname || "匿名")} / 価値：${formatBonno(currentTotal)}</div>
                 <div class="button-row">
                   <button class="danger" data-action="burn-current">燃やす</button>
                   <button class="ok" data-action="finish-current">浄化完了</button>
@@ -706,6 +860,7 @@
             <span>${escapeHtml(b.category || "未分類")}</span>
             <span> / ${escapeHtml(b.nickname || "匿名")}</span>
             <span> / ${escapeHtml(created)}</span>
+            <span> / 価値：${formatBonno(getBonnoTotal(b.id))}</span>
           </div>
           <div class="button-row">
             ${b.status === "pending" ? `
@@ -730,7 +885,7 @@
           <div class="item-main">${escapeHtml(b.text)}</div>
           <div class="item-meta">
             <span class="badge">burned</span>
-            ${escapeHtml(b.category || "未分類")} / ${escapeHtml(b.nickname || "匿名")} / ${escapeHtml(created)}
+            ${escapeHtml(b.category || "未分類")} / ${escapeHtml(b.nickname || "匿名")} / ${escapeHtml(created)} / 価値：${formatBonno(getBonnoTotal(b.id))}
           </div>
           <div class="button-row">
             <button class="ok" data-action="restore-approved" data-id="${b.id}">承認済みに戻す</button>
@@ -748,7 +903,7 @@
           <div class="item-main">${escapeHtml(b.text)}</div>
           <div class="item-meta">
             <span class="badge">NG</span>
-            ${escapeHtml(b.category || "未分類")} / ${escapeHtml(b.nickname || "匿名")} / ${escapeHtml(created)}
+            ${escapeHtml(b.category || "未分類")} / ${escapeHtml(b.nickname || "匿名")} / ${escapeHtml(created)} / 価値：${formatBonno(getBonnoTotal(b.id))}
           </div>
           <div class="button-row">
             <button class="secondary" data-action="restore-pending" data-id="${b.id}">承認待ちに戻す</button>
@@ -842,6 +997,29 @@
       await showBonno(next.id, "showing");
     }
 
+
+    async function loadValueTotals() {
+      const db = initClient();
+      if (!db) return;
+      const { data, error } = await db.from("bonno_values").select("bonno_id, amount");
+      if (error) {
+        console.error(error);
+        appState.valueTotals = {};
+        return;
+      }
+      const totals = {};
+      (data || []).forEach(row => {
+        totals[row.bonno_id] = (totals[row.bonno_id] || 0) + Number(row.amount || 0);
+      });
+      appState.valueTotals = totals;
+    }
+
+    async function loadSubmitData() {
+      await loadDisplayData();
+      await loadValueTotals();
+    }
+
+
     async function loadAdminData() {
       const db = initClient();
       if (!db) return;
@@ -856,6 +1034,7 @@
       appState.bonnos = bonnos || [];
       appState.displayState = display;
       appState.currentBonno = display?.current_bonno_id ? appState.bonnos.find(b => b.id === display.current_bonno_id) || null : null;
+      await loadValueTotals();
     }
 
     async function loadDisplayData() {
@@ -874,6 +1053,7 @@
       } else {
         appState.currentBonno = null;
       }
+      await loadValueTotals();
     }
 
     function renderScreen() {
@@ -884,7 +1064,7 @@
       const isFinished = mode === "finished";
 
       const screenText = current ? escapeHtml(current.text).trim() : "";
-      const screenMeta = current ? `カテゴリ：${escapeHtml(current.category || "未分類")}　投稿：${escapeHtml(current.nickname || "匿名")}` : "";
+      const screenMeta = current ? `カテゴリ：${escapeHtml(current.category || "未分類")}　投稿：${escapeHtml(current.nickname || "匿名")}<span class="screen-value">価値：${formatBonno(getBonnoTotal(current.id))}</span>` : "";
       root.innerHTML = `
         <main class="screen-card">
           ${isConfigured() ? "" : setupWarning()}
@@ -904,19 +1084,32 @@
       if (!db) return;
       db.channel("bonno-auction-realtime")
         .on("postgres_changes", { event: "*", schema: "public", table: "bonnos" }, async () => {
+          if (route === "submit") { await loadSubmitData(); updateParticipantValueBox(); }
           if (route === "admin") { await loadAdminData(); renderAdmin(); }
           if (route === "screen") { await loadDisplayData(); renderScreen(); }
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "display_state" }, async () => {
+          if (route === "submit") { await loadSubmitData(); updateParticipantValueBox(); }
           if (route === "admin") { await loadAdminData(); renderAdmin(); }
           if (route === "screen") { await loadDisplayData(); renderScreen(); }
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "bonno_values" }, async () => {
+          await loadValueTotals();
+          if (route === "submit") updateParticipantValueBox();
+          if (route === "admin") renderAdmin();
+          if (route === "screen") renderScreen();
         })
         .subscribe();
     }
 
     async function start() {
       if (route === "home") return renderHome();
-      if (route === "submit") return renderSubmit();
+      if (route === "submit") {
+        if (isConfigured()) await loadSubmitData();
+        renderSubmit();
+        subscribeRealtime();
+        return;
+      }
       if (route === "admin") {
         if (isConfigured()) await loadAdminData();
         renderAdmin();
